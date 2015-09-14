@@ -3,14 +3,39 @@ clojang
 
 ![Clojars Project](http://clojars.org/clojang/latest-version.svg)
 
-Micro lib making use of erlang JInterface lib to decode and encode Binary
-Erlang Term and simple erlang port interface with core.async channel. So you
-can communicate with erlang coroutine with clojure abstraction
+[![][clj-logo]][clj-logo]
 
-Last version of JInterface (from erlang 17.0) is taken from google scalaris
-maven repo.
+[clj-logo]: resources/images/clj-logo.png
 
-## Usage
+**A Clojure wrapper forErlang's JInterface**
+
+
+##### Table of Contents
+
+* [Introduction](#introduction-)
+* [Usage](#dependencies-)
+  * [Handle Exit](#handle-exit-)  
+  * [Erlang-style Handler](#erlang-style-handler-)
+* [Example](#usage-)
+  * [A Simple Calculator in Clojure](#a-simple-calculator-in-clojure-)
+  * [OTP Integration in LFE](#otp-integration-in-lfe-)
+* [Erlang and JInterface](#erlang-and-jinterface-)
+  * [A Note on Versions](#a-note-on-versions-)
+  * [Setting Your Erlang's JInterface for Clojure](#setting-your-erlangs-jinterface-for-clojure-)
+
+
+## Introduction [&#x219F;](#table-of-contents)
+
+This library is a rewrite of the
+[clojure-erlastic](https://github.com/awetzel/clojure-erlastic)
+library from which it was originally forked. It differs in how the code is
+organized, code for wrapping and working with the Erlang types, code for
+wrapping Erlang Java classes to more closely resemble Clojure idoims, and
+the use of the Pulsar library by
+[Parallel Universe](http://docs.paralleluniverse.co/pulsar/).
+
+
+## Usage [&#x219F;](#table-of-contents)
 
 `port-connection` creates two channels that you can use to
 communicate respectively in and out with the calling erlang port.
@@ -35,7 +60,47 @@ For instance, here is a simple echo server :
     (>! out (<! in))))))
 ```
 
-## Example : a simple clojure calculator ##
+### Handle Exit [&#x219F;](#table-of-contents)
+
+The channels are closed when the launching erlang application dies, so you just
+have to test if `(<! in)` is `nil` to know if the connection with erlang is
+still opened.  
+
+
+### Erlang-style Handler [&#x219F;](#table-of-contents)
+
+In Java you cannot write a function as big as you want (the compiler may fail),
+and the `go` and `match` macros expand into a lot of code. So it can be
+useful to wrap your server with an "erlang-style" handler.
+
+Clojure-erlastic provide the function `(run-server initfun handlefun)`
+allowing you to easily develop a server using erlang-style handler :
+
+- the `init` function must return the initial state
+- the `handle` function must return `[:reply response newstate]`, or `[:noreply newstate]`
+
+The argument of the init function is the first message sent by the erlang port
+after starting.
+
+```clojure
+(require '[clojure.core.async :as async :refer [<! >! <!! go]])
+(require '[clojure-erlastic.core :refer [run-server log]])
+(use '[clojure.core.match :only (match)])
+
+(run-server
+  (fn [_] 0)
+  (fn [term state] (match term
+    [:add n] [:noreply (+ state n)]
+    [:rem n] [:noreply (- state n)]
+    :get [:reply state state])))
+
+(log "end application, clean if necessary")
+```
+
+## Example [&#x219F;](#table-of-contents)
+
+
+### A Simple Calculator in Clojure [&#x219F;](#table-of-contents)
 
 My advice to create a simple erlang/elixir server in clojure is to create a `project.clj` containing the clojure-erlastic dependency and other needed deps for your server, then use "lein uberjar" to create a jar containing all the needed files. 
 
@@ -92,7 +157,8 @@ CljPort.psend(port, :get)
 
 > elixir calculator.exs
 
-## OTP integration ##
+
+### OTP Integration in LFE [&#x219F;](#table-of-contents)
 
 If you want to integrate your clojure server in your OTP application, use the
 `priv` directory which is copied 'as is'.
@@ -182,45 +248,12 @@ iex(5)> GenServer.cast Calculator,{:add, 3}
 iex(6)> GenServer.call Calculator,:get
 12
 ```
-## Handle exit
 
-The channels are closed when the launching erlang application dies, so you just
-have to test if `(<! in)` is `nil` to know if the connection with erlang is
-still opened.  
 
-## Erlang style handler ##
+## Erlang and JInterface [&#x219F;](#table-of-contents)
 
-In Java you cannot write a function as big as you want (the compiler may fail),
-and the `go` and `match` macros expand into a lot of code. So it can be
-useful to wrap your server with an "erlang-style" handler.
 
-Clojure-erlastic provide the function `(run-server initfun handlefun)`
-allowing you to easily develop a server using erlang-style handler :
-
-- the `init` function must return the initial state
-- the `handle` function must return `[:reply response newstate]`, or `[:noreply newstate]`
-
-The argument of the init function is the first message sent by the erlang port
-after starting.
-
-```clojure
-(require '[clojure.core.async :as async :refer [<! >! <!! go]])
-(require '[clojure-erlastic.core :refer [run-server log]])
-(use '[clojure.core.match :only (match)])
-
-(run-server
-  (fn [_] 0)
-  (fn [term state] (match term
-    [:add n] [:noreply (+ state n)]
-    [:rem n] [:noreply (- state n)]
-    :get [:reply state state])))
-
-(log "end application, clean if necessary")
-```
-
-## Erlang and JInterface
-
-### A Note on Versions
+### A Note on Versions [&#x219F;](#table-of-contents)
 
 JInterface is only guaranteed to work with the version of Erlang with which it
 was released. The following version numbers are paired:
@@ -244,7 +277,7 @@ was released. The following version numbers are paired:
 | R15B           | 5.9                   | 1.5.5      |
 
 
-### Setting Your Erlang's JInterface for Clojure
+### Setting Your Erlang's JInterface for Clojure [&#x219F;](#table-of-contents)
 
 Do ensure that your version of JInterface is ready for use by Clojure with your
 version of Erlang, simply do this:
@@ -264,5 +297,5 @@ $ mvn install:install-file \
 -Dfile=/opt/erlang/18.0/lib/jinterface-1.6/priv/OtpErlang.jar
 ```
 
-and install it in your ``~/.m2/`` directory, just like ``lein`` does with
-Clojars.
+and install it for you automatically in your ``~/.m2/`` directory, just like
+``lein`` does with downloaded Clojars.
