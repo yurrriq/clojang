@@ -1,4 +1,4 @@
-(ns clojure-erlastic.core-test
+(nsclojang.core-test
   (:require [clojure.test :refer :all]
             [clojure-erlastic.core :refer :all]))
 
