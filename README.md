@@ -5,7 +5,7 @@ clojang
 
 [clj-logo]: resources/images/clj-logo.png
 
-*A Clojure wrapper forErlang's JInterface*
+*A Clojure wrapper for Erlang's JInterface*
 
 ![Clojars Project](http://clojars.org/clojang/latest-version.svg)
 
