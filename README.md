@@ -218,3 +218,51 @@ after starting.
 (log "end application, clean if necessary")
 ```
 
+## Erlang and JInterface
+
+### A Note on Versions
+
+JInterface is only guaranteed to work with the version of Erlang with which it
+was released. The following version numbers are paired:
+
+| Erlang Release | Erlang Version (erts) | JInterface |
+|----------------|-----------------------|------------|
+| 18.0           | 7.0                   | 1.6        |
+| 17.5           | 6.4                   | 1.5.12     |
+| 17.4           | 6.3                   | 1.5.11     |
+| 17.3           | 6.2                   | 1.5.10     |
+| 17.2           | 6.1                   | 1.5.9      |
+| 17.1           | 6.1                   | 1.5.9      |
+| 17.0           | 6.0                   | 1.5.9      |
+| R16B03         | 5.10.4                | 1.5.8      |
+| R16B02         | 5.10.3                | 1.5.8      |
+| R16B01         | 5.10.2                | 1.5.8      |
+| R16B           | 5.10.1                | 1.5.8      |
+| R15B03         | 5.9.3                 | 1.5.6      |
+| R15B02         | 5.9.2                 | 1.5.6      |
+| R15B01         | 5.9.1                 | 1.5.6      |
+| R15B           | 5.9                   | 1.5.5      |
+
+
+### Setting Your Erlang's JInterface for Clojure
+
+Do ensure that your version of JInterface is ready for use by Clojure with your
+version of Erlang, simply do this:
+
+```
+$ ERL_LIBS=/opt/erlang/18.0 JINTERFACE_VER=1.6 make jinterface
+```
+
+This will run the following command:
+
+```
+$ mvn install:install-file \
+-Durl=file:repo \
+-DgroupId=com.ericsson.otp.erlang \
+-DartifactId=otperlang \
+-Dversion=1.6 -Dpackaging=jar \
+-Dfile=/opt/erlang/18.0/lib/jinterface-1.6/priv/OtpErlang.jar
+```
+
+and install it in your ``~/.m2/`` directory, just like ``lein`` does with
+Clojars.
