@@ -1,14 +1,13 @@
 clojang
 =======
 
-![Clojars Project](http://clojars.org/clojang/latest-version.svg)
-
 [![][clj-logo]][clj-logo]
 
 [clj-logo]: resources/images/clj-logo.png
 
-**A Clojure wrapper forErlang's JInterface**
+*A Clojure wrapper forErlang's JInterface*
 
+![Clojars Project](http://clojars.org/clojang/latest-version.svg)
 
 ##### Table of Contents
 
@@ -279,14 +278,14 @@ was released. The following version numbers are paired:
 
 ### Setting Your Erlang's JInterface for Clojure [&#x219F;](#table-of-contents)
 
-Do ensure that your version of JInterface is ready for use by Clojure with your
+To ensure that your version of JInterface is ready for use by Clojure with your
 version of Erlang, simply do this:
 
 ```
 $ ERL_LIBS=/opt/erlang/18.0 JINTERFACE_VER=1.6 make jinterface
 ```
 
-This will run the following command:
+This will run the following command for you, behind the scenes:
 
 ```
 $ mvn install:install-file \
@@ -299,3 +298,5 @@ $ mvn install:install-file \
 
 and install it for you automatically in your ``~/.m2/`` directory, just like
 ``lein`` does with downloaded Clojars.
+
+As you can see, the ``make jinterface`` target requires Maven to be installed.
