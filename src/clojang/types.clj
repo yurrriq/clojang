@@ -19,7 +19,7 @@
             OtpErlangFun
             OtpErlangExternalFun
             OtpErlangTuple
-            ;;OtpErlangMap
+            OtpErlangMap
             OtpErlangObject
             OtpErlangString
             OtpErlangBoolean])
@@ -84,16 +84,16 @@
 
 ;;; maps
 
-;; (defn erl-map [a-map]
-;;   (OtpErlangMap. (into-array OtpErlangObject (map encode (keys a-map))) 
-;;                  (into-array OtpErlangObject (map encode (vals a-map)))))
+(defn erl-map [a-map]
+  (OtpErlangMap. (into-array OtpErlangObject (map encode (keys a-map)))
+                 (into-array OtpErlangObject (map encode (vals a-map)))))
 
-;; (defn erl-map? [x]
-;;   (= (type x) OtpErlangMap))
+(defn erl-map? [x]
+  (= (type x) OtpErlangMap))
 
-;; (defn ->map [obj]
-;;   (zipmap (map decode (.keys obj))
-;;           (map decode (.values obj))))
+(defn ->map [obj]
+  (zipmap (map decode (.keys obj))
+          (map decode (.values obj))))
 
 ;;; longs
 
@@ -149,13 +149,13 @@
 ;;; Coder functions
 
 (defn decode [obj]
-  (cond 
+  (cond
     (erl-atom? obj) (->atom obj)
     (erl-list? obj) (->list obj)
     (erl-tuple? obj) (->tuple obj)
     (erl-str? obj) (->str obj)
     (erl-bin? obj) (->bin obj)
-    ;;(erl-map? obj) (->map obj)
+    (erl-map? obj) (->map obj)
     (erl-long? obj) (->long obj)
     (erl-double? obj) (->double obj)
     :else   :decoding_error))
@@ -170,7 +170,7 @@
     (keyword? obj) (erl-atom obj)
     (integer? obj) (erl-long obj)
     (float? obj) (erl-double obj)
-    ;; (map? obj) (erl-map obj)
+    (map? obj) (erl-map obj)
     (bytes? obj) (erl-bytes obj)
     (bool? obj) (erl-bool obj)
     :else   (encode (str obj))))
