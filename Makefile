@@ -9,6 +9,13 @@ UBERJAR := $(PROJ)-$(VERSION)-standalone.jar
 LOCAL_MAVEN := ~/.m2/repository
 JINTERFACE_BUILD := /tmp/jinterface/$(JINTERFACE_VER)
 
+local:
+	lein jar && lein install
+
+local-standalone:
+	lein uberjar && install
+
+
 debug:
 	@echo $(PROJ)
 	@echo $(ERL_LIBS)
@@ -34,33 +41,7 @@ build-jinterface: clean-jinterface-build
 	cd $(JINTERFACE_BUILD) && lein jar
 
 jinterface: build-jinterface
-	mvn deploy:deploy-file \
-	-Durl=file:repo \
-	-DgroupId=org.erlang.otp \
-	-DartifactId=jinterface \
-	-Dversion=$(JINTERFACE_VER) \
-	-Dpackaging=jar \
-	-Dfile=$(JINTERFACE_BUILD)/target/$(JINTERFACE_JAR)
-
-jinterface-local-old: build-jinterface
-	mvn deploy:deploy-file \
-	-Durl=file:$(LOCAL_MAVEN) \
-	-Dfile=$(JINTERFACE_BUILD)/target/$(JINTERFACE_JAR) \
-	-DgroupId=org.erlang.otp \
-	-DartifactId=jinterface \
-	-Dversion=$(JINTERFACE_VER) \
-	-Dpackaging=jar \
-	-DgeneratePom=true \
-	-DcreateChecksum=true \
-	-DlocalRepositoryPath=$(LOCAL_MAVEN)
-	#cp $(JINTERFACE_BUILD)/target/$(JINTERFACE_JAR) \
-	#$(LOCAL_MAVEN)/org/erlang/otp/jinterface/$(JINTERFACE_VER)/
+	cd $(JINTERFACE_BUILD) && lein deploy
 
 jinterface-local: build-jinterface
 	cd $(JINTERFACE_BUILD) && lein install
-
-local:
-	lein jar && lein install
-
-local-standalone:
-	lein uberjar && install
