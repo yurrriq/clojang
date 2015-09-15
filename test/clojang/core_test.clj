@@ -1,6 +1,6 @@
-(nsclojang.core-test
+(ns clojang.core-test
   (:require [clojure.test :refer :all]
-            [clojure-erlastic.core :refer :all]))
+            [clojang.core :refer :all]))
 
 (deftest encoding-test
   (testing "Keyword encoding"
