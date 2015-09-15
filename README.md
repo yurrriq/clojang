@@ -9,6 +9,7 @@ clojang
 
 ![Clojars Project](http://clojars.org/clojang/latest-version.svg)
 
+
 ##### Table of Contents
 
 * [Introduction](#introduction-)
@@ -17,10 +18,13 @@ clojang
   * [Erlang-style Handler](#erlang-style-handler-)
 * [Example](#usage-)
   * [A Simple Calculator in Clojure](#a-simple-calculator-in-clojure-)
+  * [A Simple LFE Calculator Manager](#a-simple-lfe-calculator-manager-)
   * [OTP Integration in LFE](#otp-integration-in-lfe-)
 * [Erlang and JInterface](#erlang-and-jinterface-)
   * [A Note on Versions](#a-note-on-versions-)
-  * [Setting Your Erlang's JInterface for Clojure](#setting-your-erlangs-jinterface-for-clojure-)
+  * [Setting Up Your Erlang's JInterface for Clojure](#setting-up-your-erlangs-jinterface-for-clojure-)
+  * [Finding Your Root Dir](#finding-your-root-dir-)
+  * [Finding Your JInterface Version](#finding-your-jinterface-version-)
 
 
 ## Introduction [&#x219F;](#table-of-contents)
@@ -31,10 +35,14 @@ library from which it was originally forked. It differs in how the code is
 organized, code for wrapping and working with the Erlang types, code for
 wrapping Erlang Java classes to more closely resemble Clojure idoims, and
 the use of the Pulsar library by
-[Parallel Universe](http://docs.paralleluniverse.co/pulsar/).
+[Parallel Universe](http://docs.paralleluniverse.co/pulsar/) to provide an
+Erlang-like experience within Clojure (e.g., for creating servers and
+pattern matching on received messages).
 
 
 ## Usage [&#x219F;](#table-of-contents)
+
+[to be updated]
 
 `port-connection` creates two channels that you can use to
 communicate respectively in and out with the calling erlang port.
@@ -61,12 +69,16 @@ For instance, here is a simple echo server :
 
 ### Handle Exit [&#x219F;](#table-of-contents)
 
+[to be updated]
+
 The channels are closed when the launching erlang application dies, so you just
 have to test if `(<! in)` is `nil` to know if the connection with erlang is
 still opened.  
 
 
 ### Erlang-style Handler [&#x219F;](#table-of-contents)
+
+[to be updated]
 
 In Java you cannot write a function as big as you want (the compiler may fail),
 and the `go` and `match` macros expand into a lot of code. So it can be
@@ -101,36 +113,88 @@ after starting.
 
 ### A Simple Calculator in Clojure [&#x219F;](#table-of-contents)
 
-My advice to create a simple erlang/elixir server in clojure is to create a `project.clj` containing the clojure-erlastic dependency and other needed deps for your server, then use "lein uberjar" to create a jar containing all the needed files. 
+For this example, we're going to set up a dual Clojure + LFE project in the same
+codebase. Let's start off with some directory and project creation:
 
-> mkdir calculator; cd calculator
-
-> vim project.clj
-
-```clojure
-(defproject calculator "0.0.1" 
-  :dependencies [[clojure-erlastic "0.1.4"]
-                 [org.clojure/core.match "0.2.1"]])
+```bash
+$ lfetool new library calculator
+$ mkdir -p calculator/src/clj
+$ mkdir -p calculator/src/lfe
+$ cd calculator
+$ mv src/calculator* src/lfe/
+$ export APPDIR=`pwd`
+$ lfetool 
+$ cd src/clj
+$ lein new app calculator
+$ cd calculator
+$ vi project.clj
 ```
 
-> lein uberjar
-
-Then create your clojure server as a simple script 
-
-> vim calculator.clj
+And then update the dependencies section:
 
 ```clojure
-(require '[clojure.core.async :as async :refer [<! >! <!! go]])
-(require '[clojure-erlastic.core :refer [port-connection log]])
-(use '[clojure.core.match :only (match)])
+  ...
+  :dependencies [[org.clojure/clojure "1.7.0"]
+                 [clojang "0.3.0"]
+                 [org.clojure/core.match "0.3.0-alpha4"]]
+  ...
+  :source-paths ["src/clj"]
+  ...
+```
 
-(let [[in out] (clojure-erlastic.core/port-connection)]
-  (<!! (go 
-    (loop [num 0]
-      (match (<! in)
-        [:add n] (recur (+ num n))
-        [:rem n] (recur (- num n))
-        :get (do (>! out num) (recur num)))))))
+Now create your clojure server:
+
+```bash
+$ vi src/calculator/core.clj
+```
+
+```clojure
+(ns calculator.core
+  (:require [clojure.core.async :as async :refer [<! >! <!! chan go close!]]
+            [clojang.core :refer port-connection])
+  (:gen-class))
+
+(defn -main [& args]
+  (let [[in out] (port-connection)]
+    (<!! (go
+      (loop [num 0]
+        (match (<! in)
+          [:add n] (recur (+ num n))
+          [:rem n] (recur (- num n))
+          :get (do (>! out num) (recur num))))))))
+```
+
+```bash
+$ lein uberjar
+```
+
+### A Simple LFE Calculator Manager [&#x219F;](#table-of-contents)
+
+Now we'll set up the LFE portion of the project:
+
+```bash
+$ cd $APPDIR/
+$ vi rebar.config
+```
+
+Change the ``src`` directory to poing to the new ``src/lfe`` directory you
+created:
+
+```erlang
+...
+{erl_opts, [debug_info, {src_dirs, ["test", "src/lfe"]}]}.
+...
+```
+
+```bash
+$ vi src/lfe/calculator.lfe
+```
+
+Remove the stubbed function and add one that will launch the Clojure port:
+
+```lfe
+(defmodule calculator
+  (export all))
 ```
 
 Finally launch the clojure server as a port, do not forget the `:binary` and `{:packet,4}` options, mandatory, then convert sent and received terms with `:erlang.binary_to_term` and `:erlang.term_to_binary`.
@@ -140,7 +204,7 @@ Finally launch the clojure server as a port, do not forget the `:binary` and `{:
 ```elixir
 defmodule CljPort do
   def start, do: 
-    Port.open({:spawn,'java -cp target/calculator-0.0.1-standalone.jar clojure.main calculator.clj'},[:binary, packet: 4])
+    Port.open({:spawn,'java -cp target/calculator-0.0.1-standalone.jar clojure.main'},[:binary, packet: 4])
   def psend(port,data), do: 
     send(port,{self,{:command,:erlang.term_to_binary(data)}})
   def preceive(port), do: 
@@ -158,6 +222,8 @@ CljPort.psend(port, :get)
 
 
 ### OTP Integration in LFE [&#x219F;](#table-of-contents)
+
+[to be updated -- the orginal example was in Elixir and the new one will be written in LFE, Erlang's Lisp]
 
 If you want to integrate your clojure server in your OTP application, use the
 `priv` directory which is copied 'as is'.
@@ -251,6 +317,10 @@ iex(6)> GenServer.call Calculator,:get
 
 ## Erlang and JInterface [&#x219F;](#table-of-contents)
 
+You almost certainly do not want to use the JInterface dependencies that
+are provided in Clojars. An explanation is given below with simple instructions
+for making the JInterface for your Erlang version available to Clojure.
+
 
 ### A Note on Versions [&#x219F;](#table-of-contents)
 
@@ -276,16 +346,29 @@ was released. The following version numbers are paired:
 | R15B           | 5.9                   | 1.5.5      |
 
 
-### Setting Your Erlang's JInterface for Clojure [&#x219F;](#table-of-contents)
+### Setting Up Your Erlang's JInterface for Clojure [&#x219F;](#table-of-contents)
 
 To ensure that your version of JInterface is ready for use by Clojure with your
 version of Erlang, simply do this:
 
-```
-$ ERL_LIBS=/opt/erlang/18.0 JINTERFACE_VER=1.6 make jinterface
+```bash
+$ make jinterface
 ```
 
-This will run the following command for you, behind the scenes:
+This will discover the Erlang root directory for the first ``erl`` found in your
+``PATH``. It will also location the JInterface ``.jar`` file for that version
+of Erlang.
+
+If you wish to override these, you may do the following:
+
+```
+make jinterface ERL_LIBS=/opt/erlang/15.3.1
+```
+
+This ``make`` target (which depends upon Maven being installed) will
+generate a ``lein``-friendly ``.jar`` file for you in your
+``~/.m2/repository`` directory, just like ``lein`` does with downloaded Clojars.
+The ``mvn`` command which is run by the ``make`` target has the following form:
 
 ```
 $ mvn install:install-file \
@@ -296,7 +379,36 @@ $ mvn install:install-file \
 -Dfile=/opt/erlang/18.0/lib/jinterface-1.6/priv/OtpErlang.jar
 ```
 
-and install it for you automatically in your ``~/.m2/`` directory, just like
-``lein`` does with downloaded Clojars.
 
-As you can see, the ``make jinterface`` target requires Maven to be installed.
+### Finding Your Root Dir [&#x219F;](#table-of-contents)
+
+If you don't know what your Erlang root directory is, just fire up Erlang and
+do the following:
+
+
+```
+$ erl
+```
+```erlang
+1> code:root_dir().
+"/opt/erlang/18.0"
+```
+
+The ``Makefile`` uses this to get the default Erlang root directory:
+
+```
+ERL_LIBS=$(erl -eval "io:format(code:root_dir()),halt()" -noshell)
+```
+
+### Finding Your JInterface Version [&#x219F;](#table-of-contents)
+
+With your ``ERL_LIBS`` dir in hand, you can easily discover the JInterface
+version:
+
+```bash
+$ ls -1 $ERL_LIBS/lib/|grep jinterface|awk -F- '{print $2}'
+1.6
+```
+
+The ``Makefile`` uses something similar to obtain the JInterface version number.
+
