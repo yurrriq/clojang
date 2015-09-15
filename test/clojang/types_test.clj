@@ -1,4 +1,4 @@
-(ns clojang.core-test
+(ns clojang.types-test
   (:require [clojure.test :refer :all]
             [clojang.core :refer :all]))
 
