@@ -1,6 +1,6 @@
 (ns clojang.types-test
   (:require [clojure.test :refer :all]
-            [clojang.core :refer :all]))
+            [clojang.types :refer :all]))
 
 (deftest encoding-test
   (testing "Keyword encoding"

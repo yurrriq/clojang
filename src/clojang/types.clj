@@ -119,13 +119,19 @@
 
 ;;; bytes
 
-(defn erl-bytes [bytes]
-  (OtpErlangBinary. (bytes bytes)))
+(defn erl-bytes [bs]
+  (OtpErlangBinary. (bytes bs)))
 
 ;;; booleans
 
 (defn erl-bool [bool]
   (OtpErlangBoolean. bool))
+
+(defn erl-bool? [x]
+  (= (type x) OtpErlangBoolean))
+
+(defn ->bool [obj]
+  (.booleanValue obj))
 
 ;;; binaries
 
@@ -144,7 +150,7 @@
   (= java.lang.Boolean (type x)))
 
 (defn bytes? [x]
-  (= (Class/forName "[B") (type x)))
+  (= (class (byte-array [])) (type x)))
 
 ;;; Coder functions
 
@@ -158,7 +164,8 @@
     (erl-map? obj) (->map obj)
     (erl-long? obj) (->long obj)
     (erl-double? obj) (->double obj)
-    :else   :decoding_error))
+    (erl-bool? obj) (->bool obj)
+    :else   :decoding-error))
 
 (defn encode [obj]
   (cond
@@ -166,7 +173,7 @@
     (seq? obj) (erl-list obj)
     (set? obj) (erl-list obj)
     (vector? obj) (erl-tuple obj)
-    (string? obj) (erl-bytes obj)
+    (string? obj) (erl-str obj)
     (keyword? obj) (erl-atom obj)
     (integer? obj) (erl-long obj)
     (float? obj) (erl-double obj)
