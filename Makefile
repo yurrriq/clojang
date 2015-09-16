@@ -15,7 +15,6 @@ local:
 local-standalone:
 	lein uberjar && install
 
-
 debug:
 	@echo $(PROJ)
 	@echo $(ERL_LIBS)
