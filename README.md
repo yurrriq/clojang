@@ -33,10 +33,11 @@ This library is a rewrite of the
 [clojure-erlastic](https://github.com/awetzel/clojure-erlastic)
 library from which it was originally forked. It differs in how the code is
 organized, code for wrapping and working with the Erlang types, code for
-wrapping Erlang Java classes to more closely resemble Clojure idoims, and
-the use of the Pulsar library by
-[Parallel Universe](http://docs.paralleluniverse.co/pulsar/) to provide an
-Erlang-like experience within Clojure (e.g., for creating servers and
+wrapping Erlang Java classes to more closely resemble Clojure idioms, and
+the use of the
+[Pulsar library](http://docs.paralleluniverse.co/pulsar/) by
+[Parallel Universe](https://github.com/puniverse) to provide an
+Erlang-like experience within Clojure (e.g., creating servers and
 pattern matching on received messages).
 
 
@@ -110,11 +111,8 @@ after starting.
 
 ## Example [&#x219F;](#table-of-contents)
 
-
-### A Simple Calculator in Clojure [&#x219F;](#table-of-contents)
-
-For this example, we're going to set up a dual Clojure + LFE project in the same
-codebase. Let's start off with some directory and project creation:
+We'll tackle an example in two parts: an LFE part and a Clojure part. For both,
+we'll need a shared project space:
 
 ```bash
 $ lfetool new library calculator
@@ -123,15 +121,31 @@ $ mkdir -p calculator/src/lfe
 $ cd calculator
 $ mv src/calculator* src/lfe/
 $ export APPDIR=`pwd`
-$ lfetool 
-$ cd src/clj
-$ lein new app calculator
-$ cd calculator
-$ vi project.clj
 ```
 
-And then update the dependencies section:
+This code has also been added to the ``examples`` directory, so if you don't
+have all the necesary tools installed, you are not excluded from the party :-)
 
+### A Simple Calculator in Clojure [&#x219F;](#table-of-contents)
+
+Now we can tackle the Clojure code that LFE will control. Let's create a project,
+and then just take the bits we need.
+
+```bash
+$ cd src/clj
+$ lein new app calculator
+$ mv calculator/project.clj $APPDIR
+$ mv calculator/src .
+$ mv calculator/test .
+$ rm -rf calculator
+$ mv src/calculator . && rmdir src
+```
+
+Next, config changes:
+
+```bash
+$ vi $APPDIR/project.clj
+```
 ```clojure
   ...
   :dependencies [[org.clojure/clojure "1.7.0"]
@@ -139,31 +153,37 @@ And then update the dependencies section:
                  [org.clojure/core.match "0.3.0-alpha4"]]
   ...
   :source-paths ["src/clj"]
+  :test-paths ["src/clj/test"]
   ...
+```
+
+and remove this line from your ``project.clj``:
+
+```clojure
+  :target-path "target/%s"
 ```
 
 Now create your clojure server:
 
 ```bash
-$ vi src/calculator/core.clj
+$ vi calculator/core.clj
 ```
 
 ```clojure
 (ns calculator.core
   (:require [clojure.core.async :as async :refer [<! >! <!! chan go close!]]
-            [clojang.core :refer port-connection])
+            [clojang.core :as clojang]
+            [clojure.core.match :refer [match]])
   (:gen-class))
 
 (defn -main [& args]
-  (let [[in out] (port-connection)]
+  (let [[in out] (clojang/port-connection)]
     (<!! (go
       (loop [num 0]
         (match (<! in)
           [:add n] (recur (+ num n))
           [:rem n] (recur (- num n))
-          :get (do (>! out num) (recur num))))))))
-```
-
+          :get (do (>! out num) (recur num))))))))```
 ```bash
 $ lein uberjar
 ```
@@ -190,36 +210,35 @@ created:
 $ vi src/lfe/calculator.lfe
 ```
 
-Remove the stubbed function and add one that will launch the Clojure port:
+Remove the stubbed function and replace it with the following code that will
+talk to Clojure's port:
 
 ```lfe
-(defmodule calculator
-  (export all))
+(defmodule calculator(defun java () "java -cp ")
+(defun jar () "target/calculator-0.1.0-SNAPSHOT.jar ")
+(defun args () "clojure.main calculator.clj")
+
+(defun start ()
+  (erlang:open_port `#(spawn ,(++ (java) (jar) (args))
+                             (binary #(packet 4)))))
+
+(defun cmd (port data)
+  (! port `#(,(self) #(command ,(term_to_binary data))))
+  (receive
+    (`#(data ,data) (binary_to_term data))))
+
+(defun incr (port int)
+  (cmd port `#(add ,int)))
+
+(defun decr (port int)
+  (cmd port `#(rem ,int)))
 ```
 
-Finally launch the clojure server as a port, do not forget the `:binary` and `{:packet,4}` options, mandatory, then convert sent and received terms with `:erlang.binary_to_term` and `:erlang.term_to_binary`.
+Now we can build everything an take it for a spin:
 
-> vim calculator.exs
-
-```elixir
-defmodule CljPort do
-  def start, do: 
-    Port.open({:spawn,'java -cp target/calculator-0.0.1-standalone.jar clojure.main'},[:binary, packet: 4])
-  def psend(port,data), do: 
-    send(port,{self,{:command,:erlang.term_to_binary(data)}})
-  def preceive(port), do: 
-    receive(do: ({^port,{:data,b}}->:erlang.binary_to_term(b)))
-end
-port = CljPort.start
-CljPort.psend(port, {:add,3})
-CljPort.psend(port, {:rem,2})
-CljPort.psend(port, {:add,5})
-CljPort.psend(port, :get)
-6 = CljPort.preceive(port)
-```
-
-> elixir calculator.exs
-
+```bash
+$ make compile
+$ make calc
 
 ### OTP Integration in LFE [&#x219F;](#table-of-contents)
 
