@@ -47,18 +47,8 @@ pattern matching on received messages).
 
 `port-connection` creates two channels that you can use to
 communicate respectively in and out with the calling erlang port.
-The objects you put or receive throught these channels are encoded
-and decoded into erlang binary term following these rules :
-
-- erlang atom is clojure keyword
-- erlang list is clojure list
-- erlang tuple is clojure vector
-- erlang binary is clojure bytes[]
-- erlang integer is clojure long
-- erlang float is clojure double
-- erlang map is clojure map (thanks to erlang 17.0)
-- clojure string is erlang binary (utf8)
-- clojure set is erlang list
+The objects you put or receive throught these channels are encoded to
+and decoded from erlang termd.
 
 For instance, here is a simple echo server :
 
