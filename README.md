@@ -18,13 +18,13 @@ clojang
   * [Erlang-style Handler](#erlang-style-handler-)
 * [Example](#usage-)
   * [A Simple Calculator in Clojure](#a-simple-calculator-in-clojure-)
-  * [A Simple LFE Calculator Manager](#a-simple-lfe-calculator-manager-)
+  * [A Simple LFE Calculator API](#a-simple-lfe-calculator-api-)
   * [OTP Integration in LFE](#otp-integration-in-lfe-)
 * [Erlang and JInterface](#erlang-and-jinterface-)
   * [A Note on Versions](#a-note-on-versions-)
   * [Setting Up Your Erlang's JInterface for Clojure](#setting-up-your-erlangs-jinterface-for-clojure-)
-  * [Finding Your Root Dir](#finding-your-root-dir-)
-  * [Finding Your JInterface Version](#finding-your-jinterface-version-)
+    * [Finding Your Root Dir](#finding-your-root-dir-)
+    * [Finding Your JInterface Version](#finding-your-jinterface-version-)
 
 
 ## Introduction [&#x219F;](#table-of-contents)
@@ -146,6 +146,7 @@ Next, config changes:
 ```bash
 $ vi $APPDIR/project.clj
 ```
+
 ```clojure
   ...
   :dependencies [[org.clojure/clojure "1.7.0"]
@@ -183,12 +184,14 @@ $ vi calculator/core.clj
         (match (<! in)
           [:add n] (recur (+ num n))
           [:rem n] (recur (- num n))
-          :get (do (>! out num) (recur num))))))))```
+          :get (do (>! out num) (recur num))))))))
+```
+
 ```bash
 $ lein uberjar
 ```
 
-### A Simple LFE Calculator Manager [&#x219F;](#table-of-contents)
+### A Simple LFE Calculator API [&#x219F;](#table-of-contents)
 
 Now we'll set up the LFE portion of the project:
 
@@ -319,19 +322,9 @@ make jinterface ERL_LIBS=/opt/erlang/15.3.1
 This ``make`` target (which depends upon Maven being installed) will
 generate a ``lein``-friendly ``.jar`` file for you in your
 ``~/.m2/repository`` directory, just like ``lein`` does with downloaded Clojars.
-The ``mvn`` command which is run by the ``make`` target has the following form:
-
-```
-$ mvn install:install-file \
--Durl=file:repo \
--DgroupId=com.ericsson.otp.erlang \
--DartifactId=otperlang \
--Dversion=1.6 -Dpackaging=jar \
--Dfile=/opt/erlang/18.0/lib/jinterface-1.6/priv/OtpErlang.jar
-```
 
 
-### Finding Your Root Dir [&#x219F;](#table-of-contents)
+#### Finding Your Root Dir [&#x219F;](#table-of-contents)
 
 If you don't know what your Erlang root directory is, just fire up Erlang and
 do the following:
@@ -351,7 +344,7 @@ The ``Makefile`` uses this to get the default Erlang root directory:
 ERL_LIBS=$(erl -eval "io:format(code:root_dir()),halt()" -noshell)
 ```
 
-### Finding Your JInterface Version [&#x219F;](#table-of-contents)
+#### Finding Your JInterface Version [&#x219F;](#table-of-contents)
 
 With your ``ERL_LIBS`` dir in hand, you can easily discover the JInterface
 version:
