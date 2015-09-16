@@ -214,125 +214,57 @@ Remove the stubbed function and replace it with the following code that will
 talk to Clojure's port:
 
 ```lfe
-(defmodule calculator(defun java () "java -cp ")
-(defun jar () "target/calculator-0.1.0-SNAPSHOT.jar ")
-(defun args () "clojure.main calculator.clj")
+(defmodule calculator
+  (export all))
+
+(defun java () "java -jar ")
+(defun jar () "target/calculator-0.1.0-SNAPSHOT-standalone.jar ")
+(defun args () " ")
+(defun start-cmd () "lein run")
+(defun port-name () 'lfecljport)
 
 (defun start ()
-  (erlang:open_port `#(spawn ,(++ (java) (jar) (args))
-                             (binary #(packet 4)))))
+  (register
+    (port-name)
+    (erlang:open_port ;;`#(spawn ,(++ (java) (jar) (args)))
+                      `#(spawn ,(start-cmd))
+                      '(binary use_stdio #(packet 4))))
+  #(ok started))
 
-(defun cmd (port data)
-  (! port `#(,(self) #(command ,(term_to_binary data))))
+(defun cmd (data)
+  (! (whereis (port-name)) `#(,(self) #(command ,(term_to_binary data))))
   (receive
-    (`#(data ,data) (binary_to_term data))))
+    (`#(data ,data) (binary_to_term data))
+    (x (io:format x))))
 
-(defun incr (port int)
-  (cmd port `#(add ,int)))
+(defun incr (int)
+  (cmd `#(add ,int)))
 
-(defun decr (port int)
-  (cmd port `#(rem ,int)))
+(defun decr (int)
+  (cmd `#(rem ,int)))
 ```
 
 Now we can build everything an take it for a spin:
 
 ```bash
-$ make compile
 $ make calc
+```
+
+Once in the REPL:
+
+```lfe
+> (calculator:inc 2)
+...
+```
 
 ### OTP Integration in LFE [&#x219F;](#table-of-contents)
 
 [to be updated -- the orginal example was in Elixir and the new one will be written in LFE, Erlang's Lisp]
 
-If you want to integrate your clojure server in your OTP application, use the
-`priv` directory which is copied 'as is'.
-
-```bash
-mix new myapp ; cd myapp
-mkdir -p priv/calculator
-vim priv/calculator/project.clj # define dependencies
-vim priv/calculator/calculator.clj # write your server
-cd priv/calculator ; lein uberjar ; cd ../../ # build the jar
-```
-
-Then use `"#{:code.priv_dir(:myapp)}/calculator"` to find correct path in your app.
-
-To easily use your clojure server, link the opened port in a GenServer, to
-ensure that if java crash, then the genserver crash and can be restarted by its
-supervisor.
-
-> vim lib/calculator.ex
-
-```elixir
-defmodule Calculator do
-  use GenServer
-  def start_link, do: GenServer.start_link(__MODULE__, nil, name: __MODULE__)
-  def init(nil) do
-    Process.flag(:trap_exit, true)
-    cd = "#{:code.priv_dir(:myapp)}/calculator"
-    cmd = "java -cp 'target/*' clojure.main calculator.clj"
-    {:ok,Port.open({:spawn,'#{cmd}'},[:binary, packet: 4, cd: cd])}
-  end
-  def handle_info({:EXIT,port,_},port), do: exit(:port_terminated)
-
-  def handle_cast(term,port) do
-    send(port,{self,{:command,:erlang.term_to_binary(term)}})
-    {:noreply,port}
-  end
-
-  def handle_call(term,_,port) do
-    send(port,{self,{:command,:erlang.term_to_binary(term)}})
-    result = receive do {^port,{:data,b}}->:erlang.binary_to_term(b) end
-    {:reply,result,port}
-  end
-end
-```
 
 Then create the OTP application and its root supervisor launching `Calculator`.
 
-> vim mix.exs
-
-```elixir
-  def application do
-    [mod: { Myapp, [] },
-     applications: []]
-  end
-```
-
-> vim lib/myapp.ex
-
-```elixir
-defmodule Myapp do
-  use Application
-  def start(_type, _args), do: Myapp.Sup.start_link
-
-  defmodule Sup do
-    use Supervisor
-    def start_link, do: :supervisor.start_link(__MODULE__,nil)
-    def init(nil), do:
-      supervise([worker(Calculator,[])], strategy: :one_for_one)
-  end
-end
-```
-
-Then you can launch and test your application in the shell : 
-
-```
-iex -S mix
-iex(1)> GenServer.call Calculator,:get
-0
-iex(2)> GenServer.cast Calculator,{:add, 3}
-:ok
-iex(3)> GenServer.cast Calculator,{:add, 3}
-:ok
-iex(4)> GenServer.cast Calculator,{:add, 3}
-:ok
-iex(5)> GenServer.cast Calculator,{:add, 3}
-:ok
-iex(6)> GenServer.call Calculator,:get
-12
-```
-
+[TBD]
 
 ## Erlang and JInterface [&#x219F;](#table-of-contents)
 
