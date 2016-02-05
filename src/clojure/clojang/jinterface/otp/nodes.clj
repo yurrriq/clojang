@@ -1,13 +1,26 @@
 (ns clojang.jinterface.otp.nodes
-  (:require [clojang.jinterface.otp :as otp]
+  ;; {:lang :core.typed}
+  (:require [clojure.core.typed :as t :refer [IFn ann ann-protocol]]
+            [clojure.core.typed.utils :refer [defprotocol]]
+            [clojang.jinterface.otp :as otp]
             [clojang.util :as util])
   (:import [com.ericsson.otp.erlang
             AbstractNode
+            OtpErlangObject
+            OtpErlangPid
+            OtpErlangPort
+            OtpErlangRef
+            OtpConnection
             OtpLocalNode
             OtpNode
+            OtpNodeStatus
             OtpMbox
             OtpPeer
-            OtpSelf]))
+            OtpSelf
+            OtpServerTransport
+            OtpTransport]
+           #_[java.net InetAddress])
+  (:refer-clojure :exclude [defprotocol]))
 
 ;;; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ;;; OTP constructors
@@ -36,6 +49,25 @@
 ;;; OTP protocols
 ;;; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+(ann-protocol AbstractNodeObject
+  get-alivename
+  [AbstractNodeObject -> (t/Nilable String)]
+  get-cookie
+  [AbstractNodeObject -> (t/Nilable String)]
+  ;; XXX This should allow InetAddress or String as addr
+  create-transport
+  (t/IFn #_[AbstractNodeObject InetAddress int -> (t/Nilable OtpTransport)]
+         [AbstractNodeObject String int -> (t/Nilable OtpTransport)])
+  create-server-transport
+  [AbstractNodeObject int -> (t/Nilable OtpServerTransport)]
+  get-hostname
+  [AbstractNodeObject -> (t/Nilable String)]
+  get-name
+  [AbstractNodeObject -> (t/Nilable String)]
+  set-cookie
+  [AbstractNodeObject String -> (t/Nilable String)]
+  ->str
+  [AbstractNodeObject -> (t/Nilable String)])
 (defprotocol AbstractNodeObject
   "Represents an OTP node.
 
@@ -109,6 +141,15 @@
 
 (extend AbstractNode AbstractNodeObject abstract-node-behaviour)
 
+(ann-protocol LocalNodeObject
+  create-pid
+  [LocalNodeObject -> (t/Nilable OtpErlangPid)]
+  create-port
+  [LocalNodeObject -> (t/Nilable OtpErlangPort)]
+  create-ref
+  [LocalNodeObject -> (t/Nilable OtpErlangRef)]
+  get-port
+  [LocalNodeObject -> int])
 (defprotocol LocalNodeObject
   "This class represents local node types. It is used to group the node types
   ``OtpNode`` and ``OtpSelf``."
@@ -138,6 +179,27 @@
 (extend OtpLocalNode AbstractNodeObject abstract-node-behaviour)
 (extend OtpLocalNode LocalNodeObject local-node-behaviour)
 
+(ann-protocol NodeObject
+  close
+  [NodeObject -> nil]
+  close-mbox
+  (t/IFn [NodeObject OtpMbox -> nil]
+         [NodeObject OtpMbox OtpErlangObject -> nil])
+  create-mbox
+  (t/IFn [NodeObject -> (t/Nilable OtpMbox)]
+         [NodeObject String -> (t/Nilable OtpMbox)])
+  get-names
+  [NodeObject -> (Array3 String (t/Nilable String) (t/Nilable String))]
+  ping
+  [NodeObject String long -> boolean]
+  register-mbox
+  [NodeObject String OtpMbox -> boolean]
+  register-status-handler
+  [NodeObject OtpNodeStatus -> nil]
+  set-flags
+  [NodeObject int -> nil]
+  whereis
+  [NodeObject String -> (t/Nilable OtpErlangPid)])
 (defprotocol NodeObject
   "Represents a local OTP node. This class is used when you do not wish to
   manage connections yourself - outgoing connections are established as
@@ -220,6 +282,17 @@
 
 (extend OtpPeer AbstractNodeObject abstract-node-behaviour)
 
+(ann-protocol SelfObject
+  accept
+  [SelfObject -> (t/Nilable OtpConnection)]
+  connect
+  [SelfObject OtpPeer -> (t/Nilable OtpConnection)]
+  get-pid
+  [SelfObject -> (t/Nilable OtpErlangPid)]
+  publish-port
+  [SelfObject -> boolean]
+  unpublish-port
+  [SelfObject -> nil])
 (defprotocol SelfObject
   "Represents an OTP node. It is used to connect to remote nodes or accept
   incoming connections from remote nodes.
