@@ -69,15 +69,11 @@
         (println msg)
         (println (str {:args args :errors e}))))))
 
-(defn ->str-arg [arg]
-  (condp #(%1 %2) arg
-    keyword? (name arg)
-    symbol? (str arg)
-    arg))
+(ann ->str-arg [(t/U Named String) -> String])
+(def ->str-arg "Equivalent to ``#'clojure.core/name``" name)
 
+(ann ->str-args [(t/Seqable (t/U Named String)) -> (t/Vec String)])
 (defn ->str-args [args]
-  (reduce
-    (fn [acc x]
-      (into acc [x]))
-    []
-    (map ->str-arg args)))
+  (reduce (t/fn [acc :- (t/Vec String), x :- (t/U Named String)]
+            (conj acc (->str-arg x)))
+          [] args))
