@@ -46,14 +46,15 @@
       (resolve (name-gen-fn name-part))
       (into-array Object args)))
 
+;; XXX: It's not worth the extra effort.
+(ann ^:no-check get-hostname [-> String])
 (defn get-hostname
   "Get the hostname for the machine that this JVM is running on.
 
   Uses the ``java.net.InetAddress`` methods ``getLocalHost`` and
   ``getHostName``."
   []
-  (-> (java.net.InetAddress/getLocalHost)
-      (.getHostName)))
+  (.. java.net.InetAddress (getLocalHost) (getHostName)))
 
 (defn add-err-handler
   "A wrapper for generating a specific dire error handler."
