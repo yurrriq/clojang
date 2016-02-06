@@ -1,7 +1,8 @@
 (ns clojang.util
-  (:require [clojure.string :as string]
+  (:require [clojure.core.typed :as t :refer [ann defalias]]
+            [clojure.string :as string]
             [dire.core :refer [with-handler!]])
-  (:import [clojure.lang Reflector]
+  (:import [clojure.lang Named Reflector Symbol Var]
            [com.ericsson.otp.erlang]))
 
 ;; XXX support the following keys:
