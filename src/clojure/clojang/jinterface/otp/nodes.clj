@@ -1,6 +1,6 @@
 (ns clojang.jinterface.otp.nodes
   ;; {:lang :core.typed}
-  (:require [clojure.core.typed :as t :refer [IFn ann ann-protocol]]
+  (:require [clojure.core.typed :as t :refer [ann ann-protocol]]
             [clojure.core.typed.utils :refer [defprotocol]]
             [clojang.jinterface.otp :as otp]
             [clojang.util :as util])
@@ -19,7 +19,7 @@
             OtpSelf
             OtpServerTransport
             OtpTransport]
-           #_[java.net InetAddress])
+           [java.net InetAddress])
   (:refer-clojure :exclude [defprotocol]))
 
 ;;; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -54,10 +54,8 @@
   [AbstractNodeObject -> (t/Nilable String)]
   get-cookie
   [AbstractNodeObject -> (t/Nilable String)]
-  ;; XXX This should allow InetAddress or String as addr
   create-transport
-  (t/IFn #_[AbstractNodeObject InetAddress int -> (t/Nilable OtpTransport)]
-         [AbstractNodeObject String int -> (t/Nilable OtpTransport)])
+  [AbstractNodeObject (t/U String InetAddress) int -> (t/Nilable OtpTransport)]
   create-server-transport
   [AbstractNodeObject int -> (t/Nilable OtpServerTransport)]
   get-hostname
