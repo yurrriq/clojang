@@ -37,14 +37,17 @@
        (str "com.ericsson.otp.erlang." prefix)
        (symbol)))
 
+;; XXX: This one might be worth fixing/finishing.
+(ann ^:no-check dynamic-init
+     [[String -> Symbol] String Object * -> (t/Nilable Object)])
 (defn dynamic-init
   "Dynamically instantiates classes based upon a transformation function and
   a symbol used by the transformation function to create a class name that is
   ultimately resolvable."
   [name-gen-fn name-part & args]
-    (Reflector/invokeConstructor
-      (resolve (name-gen-fn name-part))
-      (into-array Object args)))
+  (Reflector/invokeConstructor
+    (resolve (name-gen-fn name-part))
+    (t/into-array> Object args)))
 
 ;; XXX: It's not worth the extra effort.
 (ann ^:no-check get-hostname [-> String])
