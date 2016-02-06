@@ -1,4 +1,5 @@
 (ns clojang.util
+  {:lang :core.typed}
   (:require [clojure.core.typed :as t :refer [ann defalias]]
             [clojure.string :as string]
             [dire.core :refer [with-handler!]])
@@ -7,12 +8,14 @@
 
 ;; XXX support the following keys:
 ;; [-d|-debug] [DbgExtra...] [-port No] [-daemon] [-relaxed_command_check]
+(ann start-epmd [-> Symbol])
 (defn start-epmd
   "Start the Erlang Port Mapper Daemon external (OS) process needed by
   JInterface for creating nodes and communicating with other nodes."
   []
   'TBD)
 
+(ann convert-class-name [String -> String])
 (defn convert-class-name
   "A helper function for use when creating Erlang class wrappers."
   [name-symbol]
@@ -28,6 +31,7 @@
     ;; Everything else
     (string/capitalize name-symbol)))
 
+(ann make-jinterface-name [String (t/U Named String) -> Symbol])
 (defn make-jinterface-name
   "A helper function for use when defining constructor macros."
   [prefix name-symbol]
@@ -37,9 +41,12 @@
        (str "com.ericsson.otp.erlang." prefix)
        (symbol)))
 
-;; XXX: This one might be worth fixing/finishing.
-(ann ^:no-check dynamic-init
-     [[String -> Symbol] String Object * -> (t/Nilable Object)])
+;; XXX HACK
+(ann clojure.core/resolve [Symbol -> Class])
+
+(ann dynamic-init
+     [[(t/U Named String) -> Symbol] (t/U Named String) Object *
+      -> (t/Nilable Object)])
 (defn dynamic-init
   "Dynamically instantiates classes based upon a transformation function and
   a symbol used by the transformation function to create a class name that is
@@ -59,6 +66,17 @@
   []
   (.. java.net.InetAddress (getLocalHost) (getHostName)))
 
+(defalias ExceptionHandler [Exception t/Any * -> t/Any])
+
+(defalias ExceptionSelector (t/U Class (t/Vec Class)))
+
+(ann dire.core/with-handler!
+     (t/IFn [Var ExceptionSelector ExceptionHandler -> ExceptionHandler]
+            [Var String ExceptionSelector ExceptionHandler -> ExceptionHandler]))
+
+(ann add-err-handler
+     (t/IFn [Var ExceptionSelector -> ExceptionHandler]
+            [Var ExceptionSelector String -> ExceptionHandler]))
 (defn add-err-handler
   "A wrapper for generating a specific dire error handler."
   ([handled-fn excep]
