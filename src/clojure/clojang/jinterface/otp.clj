@@ -1,6 +1,9 @@
 (ns clojang.jinterface.otp
-  (:require [clojang.util :as util]))
+  (:require [clojure.core.typed :as t :refer [ann ann-protocol]]
+            [clojang.util :as util])
+  (:import [clojure.lang Named Symbol]))
 
+(ann make-otp-name [(t/U Named String) -> Symbol])
 (defn make-otp-name [name-symbol]
   "Given a symbol representing an OTP object name, this function generates
   a JInterface classname as a symbol, resolvable to an imported class."
