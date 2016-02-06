@@ -9,11 +9,14 @@
   a JInterface classname as a symbol, resolvable to an imported class."
   (util/make-jinterface-name "Otp" name-symbol))
 
-(defn init [& args]
+;;; XXX fix this
+(ann ^:no-check init [(t/U Named String) Object * -> (t/Nilable Object)])
+(defn init [name-symbol & args]
   "Common function for node instantiation.
 
   Having a single function which is ultimately responsible for creating
   objects allows us to handle instantiation errors easily, adding one handler
   for ``#'init`` instead of a bunch of handlers, one for each type of node."
   (apply #'util/dynamic-init
-         (cons #'make-otp-name args)))
+         #'make-otp-name name-symbol
+         args))
